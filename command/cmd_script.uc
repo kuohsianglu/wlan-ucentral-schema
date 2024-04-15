@@ -1,41 +1,53 @@
-/*let args = {
-        "type": "shell",
-        "script": "echo foo\n sleep 10\n",
-        "timeout": 2
-};
-
-let args = {
-        "type": "ucode",
-        "script": "printf('this is ucode')",
-        "timeout": 20
-};*/
-
 let uloop = require('uloop');
 let fs = require('fs');
 let result;
 let abort;
+if (args.type == 'diagnostic') {
+	system('cp /usr/share/ucentral/diagnostic.uc /tmp/script.cmd');
+} else {
+	let decoded = b64dec(args.script);
+	if (!decoded) {
+		result_json({
+			"error": 2,
+			"result": "invalid base64"
+		});
+		return;
+	}
 
-let script = fs.open("/tmp/script.cmd", "w");
-switch (args.type) {
-case "shell":
-        script.write("#!/bin/sh\n");
-        break;
-case "ucode":
-	script.write("#!/usr/bin/ucode\n");
-        break;
+	let script = fs.open("/tmp/script.cmd", "w");
+	script.write(decoded);
+	script.close();
+	fs.chmod("/tmp/script.cmd", 700);
 }
-script.write(args.script);
-script.close();
-fs.chmod("/tmp/script.cmd", 700);
+
+let out = '';
+if (args.uri) {
+	result_json({ error: 0, result: 'pending'});
+	out = `/tmp/bundle.${id}.tar.gz`;
+}
 
 uloop.init();
 
 let t = uloop.task(
         function(pipe) {
-                let stdout = fs.popen("/tmp/script.cmd");
-                let result = stdout.read("all");
-                let error = stdout.close();
-                return { result, error };
+		switch (args.type) {
+		case 'diagnostic':
+		case 'bundle':
+			let bundle = require('bundle');
+			bundle.init(id);
+			try {
+				include('/tmp/script.cmd', { bundle });
+			} catch(e) {
+				//e.stacktrace[0].context
+			};
+			bundle.complete();
+			return;
+		default:
+			let stdout = fs.popen("/tmp/script.cmd " + out);
+			let result = stdout.read("all");
+			let error = stdout.close();
+			return { result, error };
+		}
         },
 
         function(res) {
@@ -53,12 +65,18 @@ if (args.timeout)
 
 uloop.run();
 
-
 if (abort)
         result = {
                 "error": 255,
                 "result": "timed out"
         };
 
-printf("%.J\n", result);
-result_json(result);
+if (args.uri && !fs.stat(out)) {
+	result_json({ error: 1,
+		      result: 'script did not generate any output'});
+} else if (args.uri) {
+	ctx.call("ucentral", "upload", {file: out, uri: args.uri, uuid: args.serial});
+	result_json({ error: 0,
+		      result: 'done'});
+} else
+	result_json(result || { result: 255, error: 'unknown'});
