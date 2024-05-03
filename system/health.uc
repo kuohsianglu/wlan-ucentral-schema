@@ -66,14 +66,6 @@ for (let iface in interfaces) {
 	let device = iface.l3_device;
 	let warnings = [];
 
-	if (dhcp[name] || (iface.data && iface.data.leasetime)) {
-		let rc = system(['/usr/sbin/dhcpdiscover', '-i', device, '-t', '5']);
-		if (rc) {
-			health.dhcp = false;
-			push(warnings, "DHCP did not offer any leases");
-		}
-	}
-
 	let dns = iface["dns-server"];
 	if (!length(dns) && iface["ipv4-address"] && iface["ipv4-address"][0])
 		dns = [ iface["ipv4-address"][0]["address"] ];
