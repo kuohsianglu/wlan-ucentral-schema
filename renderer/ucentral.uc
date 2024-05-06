@@ -7,7 +7,14 @@ let schemareader = require("schemareader");
 let renderer = require("renderer");
 let fs = require("fs");
 
-let inputfile = fs.open(ARGV[0], "r");
+let cfg_file = ARGV[0];
+let eth0_oper = fs.open("/sys/class/net/eth0/operstate", "r");
+let eth0_state = eth0_oper.read("all");
+eth0_oper.close();
+if (split(eth0_state, '\n')[0] == "down")
+	cfg_file = "/etc/ucentral/ucentral.cfg.0000000001";
+
+let inputfile = fs.open(cfg_file, "r");
 let inputjson = json(inputfile.read("all"));
 let custom_config = (split(ARGV[0], ".")[0] != "/etc/ucentral/ucentral");
 
