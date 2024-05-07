@@ -7,18 +7,56 @@ let schemareader = require("schemareader");
 let renderer = require("renderer");
 let fs = require("fs");
 
-let cfg_file = ARGV[0];
-let eth0_oper = fs.open("/sys/class/net/eth0/operstate", "r");
-let eth0_state = eth0_oper.read("all");
-eth0_oper.close();
-let boardfile = fs.open("/etc/board.json", "r");
-let board = json(boardfile.read("all"));
-boardfile.close();
-let is_pi = match(board.model.name, /Raspberry*/);
-if (is_pi && split(eth0_state, '\n')[0] == "down")
-	cfg_file = "/etc/ucentral/ucentral.cfg.0000000001";
+function is_online() {
+	system("/usr/bin/ucode -l uci -l fs /usr/share/ucentral/onlinecheck.uc > /dev/null");
 
-let inputfile = fs.open(cfg_file, "r");
+	let online_state = fs.open("/tmp/onlinecheck.state", "r");
+	if (!online_state)
+		return true;
+
+	let ostate = json(online_state.read("all"));
+	online_state.close();
+
+	if (!ostate.online)
+		return false;
+	return true;
+}
+
+function is_raspberryPi() {
+	let boardfile = fs.open("/etc/board.json", "r");
+	let board = json(boardfile.read("all"));
+	boardfile.close();
+
+	let is_pi = match(board.model.name, /Raspberry*/);
+
+	if(is_pi)
+		return true;
+	return false;
+}
+
+function eth0_phy_up() {
+	let eth0_oper = fs.open("/sys/class/net/eth0/operstate", "r");
+	let eth0_state = eth0_oper.read("all");
+	eth0_oper.close();
+
+	if(split(eth0_state, '\n')[0] == "down")
+		return false;
+	return true;
+}
+
+function ucfg_file() {
+	let cfg_file = ARGV[0];
+
+	if (is_raspberryPi() && !eth0_phy_up())
+		cfg_file = "/etc/ucentral/ucentral.cfg.sta";
+
+	if (is_raspberryPi() && eth0_phy_up() && !is_online())
+		cfg_file = "/etc/ucentral/ucentral.cfg.ap";
+
+	return cfg_file;
+}
+
+let inputfile = fs.open(ucfg_file(), "r");
 let inputjson = json(inputfile.read("all"));
 let custom_config = (split(ARGV[0], ".")[0] != "/etc/ucentral/ucentral");
 
@@ -82,7 +120,7 @@ try {
 
 		if (!custom_config) {
 			fs.unlink('/etc/ucentral/ucentral.active');
-			fs.symlink(ARGV[0], '/etc/ucentral/ucentral.active');
+			fs.symlink(ucfg_file(), '/etc/ucentral/ucentral.active');
 		}
 
 		set_service_state(true);
