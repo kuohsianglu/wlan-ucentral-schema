@@ -48,10 +48,10 @@ function ucfg_file() {
 	let cfg_file = ARGV[0];
 
 	if (is_raspberryPi() && !eth0_phy_up())
-		cfg_file = "/etc/ucentral/ucentral.cfg.sta";
+		cfg_file = "/etc/ucentral/ucentral.cfg.0000000002";
 
 	if (is_raspberryPi() && eth0_phy_up() && !is_online())
-		cfg_file = "/etc/ucentral/ucentral.cfg.ap";
+		cfg_file = "/etc/ucentral/ucentral.cfg.0000000003";
 
 	return cfg_file;
 }
