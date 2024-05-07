@@ -11,7 +11,11 @@ let cfg_file = ARGV[0];
 let eth0_oper = fs.open("/sys/class/net/eth0/operstate", "r");
 let eth0_state = eth0_oper.read("all");
 eth0_oper.close();
-if (split(eth0_state, '\n')[0] == "down")
+let boardfile = fs.open("/etc/board.json", "r");
+let board = json(boardfile.read("all"));
+boardfile.close();
+let is_pi = match(board.model.name, /Raspberry*/);
+if (is_pi && split(eth0_state, '\n')[0] == "down")
 	cfg_file = "/etc/ucentral/ucentral.cfg.0000000001";
 
 let inputfile = fs.open(cfg_file, "r");
