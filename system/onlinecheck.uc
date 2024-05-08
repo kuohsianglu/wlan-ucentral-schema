@@ -52,8 +52,6 @@ else
 	state.threshold = 0;
 
 if (state.threshold >= config.check_threshold && state.online) {
-	if (index(config.action, "wifi") >= 0)
-		system("wifi down");
 	if (index(config.action, "leds") >= 0)
 		system("/etc/init.d/led blink");
 
@@ -61,8 +59,6 @@ if (state.threshold >= config.check_threshold && state.online) {
 	system("logger onlinecheck: going offline\n")
 
 } else if (!state.threshold && !state.online) {
-	if (index(config.action, "wifi") >= 0)
-		system("wifi up");
 	if (index(config.action, "leds") >= 0)
 		system("/etc/init.d/led turnon");
 	state.online = true;
