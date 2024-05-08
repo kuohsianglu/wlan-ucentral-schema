@@ -107,6 +107,7 @@ for (let iface in interfaces) {
 }
 
 try {
+	system("/usr/bin/ucode -l uci -l fs /usr/share/ucentral/onlinecheck.uc > /dev/null");
 	memory = ctx.call("system", "info");
 	memory = memory.memory;
 	state.unit.memory =  100 - (memory.available * 100 / memory.total);
