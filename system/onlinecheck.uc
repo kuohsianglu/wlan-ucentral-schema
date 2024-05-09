@@ -2,6 +2,8 @@
 let fs = require("fs");
 let uci = require("uci");
 let cursor = uci.cursor();
+let ubus = require("ubus");
+let ctx = ubus.connect();
 
 cursor.load("onlinecheck");
 let config = cursor.get_all("onlinecheck", "@config[-1]");
