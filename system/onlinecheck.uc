@@ -65,6 +65,12 @@ if (state.threshold >= config.check_threshold && state.online) {
 	system("logger onlinecheck: going online\n")
 }
 
+if (state.online) {
+	status = ctx.call("ucentral", "status");
+	if(status.disconnected && status.disconnected > 20)
+		system("/etc/init.d/ucentral restart");
+}
+
 let state_file = fs.open("/tmp/onlinecheck.state", "w");
 state_file.write(state);
 state_file.close();
