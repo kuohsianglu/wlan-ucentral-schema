@@ -47,11 +47,8 @@ function eth0_phy_up() {
 function ucfg_file() {
 	let cfg_file = ARGV[0];
 
-	if (is_raspberryPi() && !eth0_phy_up())
-		cfg_file = "/etc/ucentral/ucentral.cfg.0000000002";
-
-	if (is_raspberryPi() && eth0_phy_up() && !is_online())
-		cfg_file = "/etc/ucentral/ucentral.cfg.0000000003";
+	if (is_raspberryPi() && !is_online())
+		cfg_file = "/etc/ucentral/ucentral.cfg.0000000005";
 
 	return cfg_file;
 }
@@ -114,12 +111,8 @@ try {
 		apply.write(batch);
 		apply.close();
 
-		if (is_raspberryPi() && eth0_phy_up()) {
-			let apply_rpi = fs.popen("/sbin/uci -c /tmp/config-shadow batch", "w");
-			let rpi_batch = rpi_uci_batch();
-			fs.stdout.write("RPI UCI batch output:\n" + rpi_batch + "\n");
-			apply_rpi.write(rpi_batch);
-			apply_rpi.close();
+		if (is_raspberryPi()) {
+			system("sh /etc/ucentral/pibatch");
 		}
 
 		renderer.write_files(logs);
